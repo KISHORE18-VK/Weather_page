@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            transition: background-image 1s ease-in-out;
+            background-image: url('https://hallow.com/wp-content/uploads/2019/09/EN-Prayers-for-the-Morning-1536x1076.png');
+            /* Replace with your GIF link */
+        }
+        
+        .container {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        h1 {
+            color: #00796b;
+        }
+        
+        input[type="text"] {
+            padding: 10px 20px;
+            font-size: 1em;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            outline: none;
+            width: 300px;
+            box-sizing: border-box;
+            margin-bottom: 15px;
+        }
+        
+        input[type="text"]::placeholder {
+            color: #999;
+        }
+        
+        button {
+            padding: 10px 20px;
+            font-size: 1em;
+            border: none;
+            border-radius: 25px;
+            background-color: #00796b;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #004d40;
+        }
+        
+        .weather-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 1s, transform 1s;
+            width: 100%;
+            max-width: 1200px;
+            padding: 0 20px;
+            box-sizing: border-box;
+            z-index: 1;
+        }
+        
+        .weather-info.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .weather-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background-color: #e3f2fd;
+            /* Light blue background */
+            padding: 20px;
+            max-width: 250px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .weather-box:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .weather-box img {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 10px;
+        }
+        
+        .weather-box h3 {
+            font-size: 1.2em;
+            margin: 10px 0;
+            color: #00796b;
+            /* Darker blue color for headers */
+        }
+        
+        .weather-box p {
+            font-size: 1em;
+            margin: 5px 0;
+            color: #004d40;
+            /* Darker shade for text */
+        }
+        
+        .weather-box .time {
+            font-size: 0.9em;
+            color: #004d40;
+            /* Darker shade for time */
+        }
+        
+        .weather-box .lat-lon {
+            font-size: 0.9em;
+            color: #004d40;
+            /* Darker shade for latitude and longitude */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Weather In Your City</h1>
+        <input type="text" id="locations" placeholder="Enter comma-separated city names">
+        <button onclick="getWeather()">Search</button>
+    </div>
+    <div class="weather-info" id="weather-info"></div>
+
+    <script>
+        function updateBackground() {
+            const now = new Date();
+            const hours = now.getHours();
+
+            let bgImage = '';
+
+            if (hours >= 6 && hours < 17) {
+                bgImage = 'url("https://img.freepik.com/free-photo/beautiful-anime-landscape-cartoon-scene_23-2151035237.jpg")'; // Replace with actual URL for 6 AM to 5 PM
+            } else if (hours >= 17 && hours < 19) {
+                bgImage = 'url("https://img.freepik.com/fotos-premium/arte-digital-de-fundo-do-japao_978521-40356.jpg")'; // Replace with actual URL for 5:01 PM to 7 PM
+            } else {
+                bgImage = 'url("https://static.vecteezy.com/system/resources/previews/031/322/056/large_2x/flying-lanterns-in-the-night-sky-during-the-diwali-festival-india-yee-peng-or-midautumn-day-in-china-concept-by-ai-generated-free-photo.jpg")'; // 7:01 PM to 5:59 AM
+            }
+
+            document.body.style.backgroundImage = bgImage;
+        }
+
+        async function getWeather() {
+            const locations = document.getElementById('locations').value.split(',').map(loc => loc.trim());
+            const apiKey = '5ae3cafaec399ae6a5f245db1f27cdfb'; // Replace with your API key
+
+            const requests = locations.map(location =>
+                fetch(`https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(location)}&appid=${apiKey}&units=metric`)
+            );
+
+            try {
+                const responses = await Promise.all(requests);
+                const weatherData = await Promise.all(responses.map(response => response.json()));
+
+                const weatherInfo = weatherData.map(data => {
+                    const date = new Date(data.dt * 1000); // Convert Unix timestamp to Date object
+                    const timeIST = new Date(date.toLocaleString("en-US", {
+                        timeZone: "Asia/Kolkata"
+                    })).toLocaleString(); // IST Time
+                    const {
+                        lat,
+                        lon
+                    } = data.coord; // Latitude and Longitude
+
+                    return `
+                        <div class="weather-box">
+                            <img src="https://img.icons8.com/color/48/000000/thermometer.png" alt="Temperature">
+                            <h3>Temperature</h3>
+                            <p>${data.main.temp}°C</p>
+                        </div>
+                        <div class="weather-box">
+                            <img src="https://img.icons8.com/ios/50/000000/wind--v1.png" alt="Wind Speed">
+                            <h3>Wind Speed</h3>
+                            <p>${data.wind.speed} m/s</p>
+                        </div>
+                        <div class="weather-box">
+                            <img src="https://img.icons8.com/color/48/000000/wet.png" alt="Humidity">
+                            <h3>Humidity</h3>
+                            <p>${data.main.humidity}%</p>
+                        </div>
+                        <div class="weather-box">
+                            <img src="https://img.icons8.com/?size=100&id=bjVyarz2CnuU&format=png&color=000000" alt="Weather">
+                            <h3>Weather</h3>
+                            <p>${data.weather[0].description}</p>
+                        </div>
+                        <div class="weather-box">
+                            <img src="https://img.icons8.com/color/48/000000/map.png" alt="Map">
+                            <h3>Location</h3>
+                            <p class="lat-lon">Latitude: ${lat.toFixed(2)}</p>
+                            <p class="lat-lon">Longitude: ${lon.toFixed(2)}</p>
+                        </div>
+                        <div class="weather-box">
+                            <img src="https://img.icons8.com/color/48/000000/time.png" alt="Time">
+                            <h3>Update Time (IST)</h3>
+                            <p class="time">${timeIST}</p>
+                        </div>
+                    `;
+                }).join('');
+
+                const weatherInfoDiv = document.getElementById('weather-info');
+                weatherInfoDiv.innerHTML = weatherInfo;
+                weatherInfoDiv.classList.add('show');
+
+                // Update background image based on time after showing weather info
+                updateBackground();
+            } catch (error) {
+                document.getElementById('weather-info').innerHTML = `<p style="color: red;">${error.message}</p>`;
+            }
+        }
+
+        // Initial background setup with GIF
+        document.body.style.backgroundImage = 'url("https://hallow.com/wp-content/uploads/2019/09/EN-Prayers-for-the-Morning-1536x1076.png")'; // Replace with your GIF link
+
+        // Optional: Update background every minute to reflect any time changes (after the first click)
+        setInterval(updateBackground, 60000);
+    </script>
+</body>
+
+</html>
